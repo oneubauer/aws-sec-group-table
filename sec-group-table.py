@@ -19,6 +19,11 @@ cli.add_argument(  "--netlist",
                     type=str,
                     default=[]
                 )
+cli.add_argument(   "--vpclist",
+                    nargs="*",
+                    type=str,
+                    default=[]
+                )
 
 args = cli.parse_args()
 
@@ -39,7 +44,10 @@ def network_match_netlist(network):
     return result
 
 for group in data['SecurityGroups']:
+    if args.vpclist != [] and group['VpcId'] not in args.vpclist:
+        continue
     groupName = group['GroupName']
+    vpcId = group['VpcId']
     inUserIdString = ""
     inCidrString = ""
     outUserIdString = ""
@@ -92,7 +100,7 @@ for group in data['SecurityGroups']:
         for tag in  group['Tags']:
             tagString += f"{tag['Key']}={tag['Value']}\n"
 
-    row = [groupName, inCidrString, inUserIdString, outCidrString, outUserIdString, tagString ]
+    row = [groupName, vpcId, inCidrString, inUserIdString, outCidrString, outUserIdString, tagString ]
     table_data.append(row)
 
 print(tabulate(table_data,headers=["Group Name", "CIDR (IN)", "UserID (IN)", "CIDR (OUT)", "UserID (OUT)", "Tags"],tablefmt="fancy_grid"))
