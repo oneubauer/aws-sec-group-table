@@ -24,6 +24,12 @@ cli.add_argument(   "--vpclist",
                     type=str,
                     default=[]
                 )
+cli.add_argument(   "--only-show-cidr-matches",
+                    action='store_true',
+                    dest="only_show_cidr_matches",
+                )
+
+cli.set_defaults(only_show_cidr_matches=False)
 
 args = cli.parse_args()
 
@@ -53,6 +59,7 @@ for group in data['SecurityGroups']:
     outUserIdString = ""
     outCidrString = ""
     tagString = ""
+    matchFound = False
 
     for ipPermissions in group['IpPermissions']:
         if "FromPort" in ipPermissions:
@@ -70,6 +77,7 @@ for group in data['SecurityGroups']:
 
         for ipRange in ipPermissions['IpRanges']:
             if network_match_netlist(ipRange['CidrIp']) == True:
+                matchFound = True
                 inCidrString += f"{Back.RED}{ipRange['CidrIp']}{Style.RESET_ALL}:{ipProtocolString}:{portRange}\n"
             else:
                 inCidrString += f"{ipRange['CidrIp']}:{ipProtocolString}:{portRange}\n"
@@ -100,10 +108,13 @@ for group in data['SecurityGroups']:
         for tag in  group['Tags']:
             tagString += f"{tag['Key']}={tag['Value']}\n"
 
-    row = [groupName, vpcId, inCidrString, inUserIdString, outCidrString, outUserIdString, tagString ]
-    table_data.append(row)
+    if matchFound == False and args.only_show_cidr_matches == True:
+        continue
+    else:
+        row = [groupName, vpcId, inCidrString, inUserIdString, outCidrString, outUserIdString, tagString ]
+        table_data.append(row)
 
-print(tabulate(table_data,headers=["Group Name", "CIDR (IN)", "UserID (IN)", "CIDR (OUT)", "UserID (OUT)", "Tags"],tablefmt="fancy_grid"))
+print(tabulate(table_data,headers=["Group Name", "VPC ID", "CIDR (IN)", "UserID (IN)", "CIDR (OUT)", "UserID (OUT)", "Tags"],tablefmt="fancy_grid"))
 
 
 
